@@ -1,0 +1,19 @@
+def hblist(tenant, tenantname):
+    if '卫光' in tenantname or '卫伦' in tenantname:
+        sql = "select a.BillNo from Specimen a join TestItem b on 1 = 1 and b.Type = 7 and b.TenantId = "+tenant+" left join SampleResults c on c.SpecimenBillNo = a.BillNo and c.BillStatus = 3 and c.TestItemId = b.Id where a.TenantId = "+tenant+" and datediff(day, a.CreationTime, getdate()) = 0 and c.Id is null"
+    else:
+        sql = "select a.SpecimenBillNo from SpecimenBatchManagementDetail a join TestItem b on 1 = 1 and b.Type = 7 and b.TenantId = "+tenant+" left join SampleResults c on c.SpecimenBillNo = a.SpecimenBillNo and c.BillStatus = 3 where a.TenantId = "+tenant+" and datediff(day,a.CreationTime,getdate()) = 0 and c.Id is null"
+    return sql
+
+def hbno(tenant, billno):
+    sql = "select BillNo from Specimen where Code = '{}' and TenantId = {}".format(billno, tenant)
+    return sql
+
+def hbins(tenant, tenantname, date):
+    if '卫光' in tenantname:
+        sql = "INSERT INTO dbo.SampleResults (SpecimenBillNo, OriginalResults, Results, Proportion, TestItemId, OriginalResultId, BillStatus, SamplePlateNumber, ManualNumber, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId, AuditTime, IsTempResult) VALUES (N'" + date['BillNo'] + "', N'" + date['HB'] + "', (iif((select Gender from Specimen where BillNo = '" + date['BillNo'] + "') = 2, iif(cast(" + date['HB'] + " as int) >= 115, '正常', '异常'), iif(cast(" + date['HB'] + " as int) >= 120, '正常', '异常'))), null, (select top 1 Id from TestItem where Type = 7 and TenantId = " + tenant + "), null, 3, null, null, " + tenant + ", getdate(), (select Id from AbpUsers where TenantId = " + tenant + " and UserName = '" + tenantname + "'), getdate(), null, null, 0);"
+    else:
+        sql = "INSERT INTO dbo.SampleResults (SpecimenBillNo, OriginalResults, Results, Proportion, TestItemId, OriginalResultId, BillStatus, SamplePlateNumber, ManualNumber, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId, AuditTime, IsTempResult) VALUES (N'"+date['BillNo']+"', N'"+date['HB']+"', (iif((select Gender from Specimen where BillNo = '"+date['BillNo']+"') = 2, iif(cast("+date['HB']+" as int) >= 115, '正常', '异常'), iif(cast("+date['HB']+" as int) >= 120, '正常', '异常'))), null, (select top 1 Id from TestItem where Type = 7 and TenantId = "+tenant+"), null, 0, null, null, "+tenant+", getdate(), (select Id from AbpUsers where TenantId = "+tenant+" and UserName = '"+tenantname+"'), getdate(), null, null, 0);"
+    return sql
+
+# {"TestName":"TPAb","Operator":"骆红","TestTime":"2023-01-10 16:14:14","PlateNo":"TPAb20230110001","CutOff":"0.133","SampleResults":[{"BatchInfoName":"BL","SpecimenBillNo":null,"PositionNo":"A01","Info":null,"OriginResult":"0.003","AnalysisInfo":"0.024","Result":"阴性"},{"BatchInfoName":"NC","SpecimenBillNo":null,"PositionNo":"B01","Info":null,"OriginResult":"0.003","AnalysisInfo":"0.024","Result":"阴性"},{"BatchInfoName":"NC","SpecimenBillNo":null,"PositionNo":"C01","Info":null,"OriginResult":"0.001","AnalysisInfo":"0.008","Result":"阴性"},{"BatchInfoName":"NC","SpecimenBillNo":null,"PositionNo":"D01","Info":null,"OriginResult":"0.004","AnalysisInfo":"0.033","Result":"阴性"},{"BatchInfoName":"PC","SpecimenBillNo":null,"PositionNo":"E01","Info":null,"OriginResult":"3.376","AnalysisInfo":"27.447","Result":"阳性"},{"BatchInfoName":"PC","SpecimenBillNo":null,"PositionNo":"F01","Info":null,"OriginResult":"3.345","AnalysisInfo":"27.195","Result":"阳性"},{"BatchInfoName":"QC","SpecimenBillNo":null,"PositionNo":"G01","Info":null,"OriginResult":"0.509","AnalysisInfo":"4.138","Result":"阳性"},{"BatchInfoName":"030011000256230110","SpecimenBillNo":null,"PositionNo":"H01","Info":null,"OriginResult":"0.003","AnalysisInfo":"0.024","Result":"阴性"},{"BatchInfoName":"030011000257230110","SpecimenBillNo":null,"PositionNo":"A02","Info":null,"OriginResult":"0.509","AnalysisInfo":"4.138","Result":"阴性"}]}
