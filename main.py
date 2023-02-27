@@ -11,7 +11,7 @@ from GetAllTenant import tenantlist
 from IPConfig import getapihost
 from SqlServer import sqlselect, sqlup
 from hbanalysis import hblist, hbno, hbins
-from infectioussql import findbill
+from infectioussql import findbill, wl_save
 from shenghua import findlist, sampleresults, findbillno, baseinfo
 
 from untitled import Ui_Form
@@ -366,20 +366,26 @@ class QmyWidget(QWidget):
         except:
             self.ui.textBrowser.append('{} 传染4项没有可用数据'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
 
-    def insinfectious(self):
+    def insinfectious(self):  # 传染解析
         row_num = self.ui.tableWidget_3.rowCount()
         infdate = []
         for i in range(0, row_num):
             if self.ui.tableWidget_3.item(i, 2) is not None:
                 infdate.append({'BillNo': self.ui.tableWidget_3.item(i, 2).text(),
-                                     'PositionNo': self.ui.tableWidget_3.item(i, 1).text(),
-                                     'HBsAg': self.ui.tableWidget_3.item(i, 3).text(),
-                                     'HCVAb': self.ui.tableWidget_3.item(i, 4).text(),
-                                     'HIVAb': self.ui.tableWidget_3.item(i, 5).text(),
-                                     'TPAb': self.ui.tableWidget_3.item(i, 6).text()})
+                                'PositionNo': self.ui.tableWidget_3.item(i, 1).text(),
+                                'HBsAg': self.ui.tableWidget_3.item(i, 3).text(),
+                                'HCVAb': self.ui.tableWidget_3.item(i, 4).text(),
+                                'HIVAb': self.ui.tableWidget_3.item(i, 5).text(),
+                                'TPAb': self.ui.tableWidget_3.item(i, 6).text()})
             else:
                 self.ui.textBrowser.append('{} 第 {} 行中出现空值，无法解析'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), i + 1))
-        print(infdate)
+        re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+        for ii in range(0, len(re)):
+            try:
+                self.sqlupdate(re[ii][2])
+                self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
+            except:
+                self.ui.textBrowser.append('{} 在解析{}项目时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
 
 
 if __name__ == "__main__":  # 用于当前窗体测试

@@ -1,3 +1,5 @@
+import json
+import random
 import time
 
 import requests
@@ -110,10 +112,6 @@ def wl_testbatch(host, apihost, tenant, token):
                             Syphilis.append(batch[j])
                         break
     # 打包给下一个方法使用
-    print(HBsAg)
-    print(HIVAb)
-    print(HCVAb)
-    print(Syphilis)
     alltest = [HBsAg, HIVAb, HCVAb, Syphilis]
     return alltest
 
@@ -130,38 +128,87 @@ def wl_savebody(test):
 
 
 # 保存样板
-def wl_save(host, apihost, tenant, token):
+def wl_save(host, apihost, tenant, token, infdate):
     alltest = wl_testbatch(host, apihost, tenant, token)
-    print(alltest)
+    # print(alltest)
     url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
     headers = {'Host': apihost, 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
         'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
         '.AspNetCore.Culture': 'zh-hans', 'Content-Type': 'application/json;charset=UTF-8', 'Origin': host,
         'Referer': '{}/'.format(host), 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
+    ret = []
     for i in range(0, len(alltest)):
         body = wl_savebody(alltest[i])
         r = requests.post(url, headers=headers, json=body)
         billinf = r.json()['result']
+        # print(billinf)
+        # print('项目', alltest[i][0])
+        # print(infdate)
+        DataSource = wl_slm_ori(infdate, alltest[i][0], billinf['samplePlateNumber'])
         time.sleep(1)
-        print(billinf)
-        # return billinf
-
+        sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'"+DataSource+"', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
+        # print([alltest[i][0], sql])
+        ret.append([alltest[i][0], billinf['samplePlateNumber'], sql])
+    return ret
 
 # 生成样板内容
-def wl_slm_ori(date):
-    slm = {"TestName": "HCV", "Operator": "陈彦颖", "TestTime": "2023-02-17 12:14:12", "PlateNo": "20230217121412HCV", "CutOff": "0.123",
+def wl_slm_ori(date, testname, sampno):
+    slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "PlateNo": sampno, "CutOff": "0.123",
         "SampleResults": [
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "A01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "B01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "C01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
-            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "D01", "Info": None, "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "+"},
-            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "E01", "Info": None, "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "+"},
-            {"BatchInfoName": "QC", "SpecimenBillNo": None, "PositionNo": "F01", "Info": None, "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "+"}]
-        }
+            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "A01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "B01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "C01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "D01", "Info": None, "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "阳性"},
+            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "E01", "Info": None, "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "阳性"},
+            {"BatchInfoName": "QC", "SpecimenBillNo": None, "PositionNo": "F01", "Info": None, "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "阳性"}
+        ]}
     for i in range(0, len(date)):
-        ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"}
+        hbsagy = [{"OriginResult": "0.001", "AnalysisInfo": "0.010"}, {"OriginResult": "0.002", "AnalysisInfo": "0.019"}, {"OriginResult": "0.003", "AnalysisInfo": "0.029"}]
+        hbsagf = {"OriginResult": "0.306", "AnalysisInfo": "2.914"}
+        hcvaby = [{"OriginResult": "0.000", "AnalysisInfo": "0.000"}, {"OriginResult": "0.001", "AnalysisInfo": "0.008"}, {"OriginResult": "0.002", "AnalysisInfo": "0.016"}, {"OriginResult": "0.003", "AnalysisInfo": "0.025"}, {"OriginResult": "0.004", "AnalysisInfo": "0.033"}]
+        hcvabf = {"OriginResult": "0.572", "AnalysisInfo": "4.689"}
+        hivaby = [{"OriginResult": "0.001", "AnalysisInfo": "0.008"}, {"OriginResult": "0.002", "AnalysisInfo": "0.019"}, {"OriginResult": "0.003", "AnalysisInfo": "0.029"}]
+        hivabf = {"OriginResult": "0.216", "AnalysisInfo": "1.756"}
+        tpaby = [{"OriginResult": "0.000", "AnalysisInfo": "0.000"}, {"OriginResult": "0.001", "AnalysisInfo": "0.006"}, {"OriginResult": "0.002", "AnalysisInfo": "0.011"}]
+        tpabf = {"OriginResult": "0.711", "AnalysisInfo": "2.843"}
+        ori = {"OriginResult": "0.000", "AnalysisInfo": "0.000"}
+        if date[i]['HBsAg'] == '-' and testname == 'HBsAg':
+            ori.update(random.choice(hbsagy))
+            ori.update({"Result": '阴性'})
+        elif date[i]['HBsAg'] == '+' and testname == 'HBsAg':
+            ori.update(hbsagf)
+            ori.update({"Result": '阳性'})
 
+        elif date[i]['HCVAb'] == '-' and testname == 'HCVAb':
+            ori.update(random.choice(hcvaby))
+            ori.update({'Result': '阴性'})
+        elif date[i]['HCVAb'] == '+' and testname == 'HCVAb':
+            ori.update(hcvabf)
+            ori.update({'Result': '阳性'})
+
+        elif date[i]['HIVAb'] == '-' and testname == 'HIVAb':
+            ori.update(random.choice(hivaby))
+            ori.update({'Result': '阴性'})
+        elif date[i]['HIVAb'] == '+' and testname == 'HIVAb':
+            ori.update(hivabf)
+            ori.update({'Result': '阳性'})
+
+        elif date[i]['TPAb'] == '-' and testname == 'TPAb':
+            ori.update(random.choice(tpaby))
+            ori.update({'Result': '阴性'})
+        elif date[i]['TPAb'] == '+' and testname == 'TPAb':
+            ori.update(tpabf)
+            ori.update({'Result': '阳性'})
+
+        ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
+        ii.update(ori)
+        slm["SampleResults"].append(ii)
+    slm = json.dumps(slm)
+    # print('整版的内容', slm)
+    return slm
 
 # print(wl_save('http://192.168.1.112:1002', 'http://192.168.1.112:21021', '3',
-#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMyIsInN1YiI6IjEwMDA2IiwianRpIjoiZjQ5ZjM1ZjQtNmNmMy00N2I5LWJlODAtYjA1M2VlYTBlYTQ3IiwiaWF0IjoxNjc2Njg3Mzg1LCJuYmYiOjE2NzY2ODczODUsImV4cCI6MTY3Njc3Mzc4NSwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.ZWc7kJR7SESIXPQmuj1RigHBNlBAyIM7yJ3BuzYN4L4'))
+#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMyIsInN1YiI6IjEwMDA2IiwianRpIjoiNTdiZTMyZmQtZmI5NC00NGI3LWExZjQtNWJkMWQ3ODk4ODBlIiwiaWF0IjoxNjc3NDU4NTQyLCJuYmYiOjE2Nzc0NTg1NDIsImV4cCI6MTY3NzU0NDk0MiwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.igrig9y-8lQmchH-MFnlSdnuIrShFH4UIXSGF3u5cHU',
+#               [{'BillNo': '030010700173230227', 'PositionNo': 'A02', 'HBsAg': '+', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '030010700176230227', 'PositionNo': 'B02', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '030121000074230227', 'PositionNo': 'C02', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}]
+# ))
