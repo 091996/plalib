@@ -102,11 +102,8 @@ class QmyWidget(QWidget):
             self.user = to[1]['userId']
             self.token = to[1]['accessToken']
             self.ac = to[1]['encryptedAccessToken']
-            sql = "select TenancyName from AbpTenants where Id = {} and TenancyName = '{}'".format(str(self.tenantid),
-                                                                                                   tenantname)
-            # print(self.sqldb)
-            # print(self.tenantid)
-            # print(sql)
+            sql = "select TenancyName from AbpTenants where Id = {} and TenancyName = '{}'".format(str(self.tenantid), tenantname)
+
             tenancyName = self.sqlsel(sql)
             # 连接成功且登录成功后初始化面板
             if len(tenancyName) > 0:
@@ -214,12 +211,12 @@ class QmyWidget(QWidget):
                             self.ui.textBrowser.append(
                                 '{} 无法找到流水号为 {} 的标本'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                                                             BillNo))
+                            break
                     except:
                         self.ui.textBrowser.append(
                             '{} 无法找到流水号为 {} 的标本'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), BillNo))
                         break
-                tabledate.append({'BillNo': BillNo, 'PlateNo': self.ui.tableWidget.item(i, 0).text(),
-                                     'ALT': self.ui.tableWidget.item(i, 2).text(),
+                tabledate.append({'BillNo': BillNo, 'PlateNo': self.ui.tableWidget.item(i, 0).text(), 'ALT': self.ui.tableWidget.item(i, 2).text(),
                                      'TP': self.ui.tableWidget.item(i, 3).text(), 'Code': Code})
             else:
                 self.ui.textBrowser.append(
@@ -370,7 +367,7 @@ class QmyWidget(QWidget):
         row_num = self.ui.tableWidget_3.rowCount()
         infdate = []
         for i in range(0, row_num):
-            if self.ui.tableWidget_3.item(i, 2) is not None:
+            if self.ui.tableWidget_3.item(i, 1) is not None and self.ui.tableWidget_3.item(i, 2) is not None:
                 infdate.append({'BillNo': self.ui.tableWidget_3.item(i, 2).text(),
                                 'PositionNo': self.ui.tableWidget_3.item(i, 1).text(),
                                 'HBsAg': self.ui.tableWidget_3.item(i, 3).text(),
@@ -379,17 +376,18 @@ class QmyWidget(QWidget):
                                 'TPAb': self.ui.tableWidget_3.item(i, 6).text()})
             else:
                 self.ui.textBrowser.append('{} 第 {} 行中出现空值，无法解析'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), i + 1))
-        try:
-            re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
-            for ii in range(0, len(re)):
-                try:
-                    self.sqlupdate(re[ii][2])
-                    self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
-                    self.infectious()
-                except:
-                    self.ui.textBrowser.append('{} 在解析{}项目时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
-        except:
-            self.ui.textBrowser.append('{} 在解析时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+        if len(infdate) > 0:
+            try:
+                re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+                for ii in range(0, len(re)):
+                    try:
+                        self.sqlupdate(re[ii][2])
+                        self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
+                        self.infectious()
+                    except:
+                        self.ui.textBrowser.append('{} 在解析时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
+            except:
+                self.ui.textBrowser.append('{} 在解析时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
