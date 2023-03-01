@@ -1,7 +1,6 @@
 import json
 import random
 import time
-
 import requests
 
 
@@ -22,25 +21,27 @@ group by a.BillNo""".format(tenant, tenant)
 # 丹霞的方法
 def dx_templatelist(host, apihost, tenant, token):
     url = '{}/api/services/app/TestTemplateBetail/GetAllList?maxResultCount=1000'.format(apihost)
-    headers = {'Host': apihost, 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
-        'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
+    headers = {'Host': apihost.split('//', -1)[1],
+        'Connection': 'keep-alive',
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': 'Bearer {}'.format(token),
+        'Abp.TenantId': tenant,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
-        '.AspNetCore.Culture': 'zh-hans', 'Origin': host, 'Referer': '{}/'.format(host),
-        'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
+        '.AspNetCore.Culture': 'zh-hans',
+        'Origin': host,
+        'Referer': '{}/'.format(host),
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+    }
     r = requests.get(url, headers=headers)
     # print(r.json()['result']['items'])
     return r.json()['result']['items']
 
 
 # 卫伦先找出酶免4项的检验项目信息
-def wl_getallpage(host, apihost, tenant, token):
+def wl_getallpage(apihost):
     url = '{}/api/services/app/TestItem/GetAllPage'.format(apihost)
-    headers = {'Host': apihost, 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
-        'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
-        '.AspNetCore.Culture': 'zh-hans', 'Origin': host, 'Referer': '{}/'.format(host),
-        'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
-    r = requests.get(url, headers=headers)
+    r = requests.get(url)
     inf = r.json()['result']
     re = []
     for i in range(0, len(inf)):
@@ -52,19 +53,18 @@ def wl_getallpage(host, apihost, tenant, token):
 # 找出所有的物资信息
 def wl_batchinformation(host, apihost, tenant, token):
     url = '{}/api/services/app/BatchInformation/GetManufacturerBatchNumberList'.format(apihost)
-    headers = {'Host': apihost, 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
-        'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
+    header = {'Accept': 'application/json, text/plain, */*', 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
-        '.AspNetCore.Culture': 'zh-hans', 'Origin': host, 'Referer': '{}/'.format(host),
-        'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
-    r = requests.get(url, headers=headers)
+        '.AspNetCore.Culture': 'zh-hans', 'Abp.TenantId': tenant, 'Referer': '{}/'.format(host),
+        'Authorization': 'Bearer {}'.format(token), 'Origin': host, 'Connection': 'keep-alive', 'Host': apihost.split('//', -1)[1]}
+    r = requests.get(url=url, headers=header)
     inf = r.json()['result']
     return inf
 
 
 # 根据项目找出试剂、质控
 def wl_testbatch(host, apihost, tenant, token):
-    test = wl_getallpage(host, apihost, tenant, token)
+    test = wl_getallpage(apihost)
     batch = wl_batchinformation(host, apihost, tenant, token)
     HBsAg = ['HBsAg']
     HCVAb = ['HCVAb']
@@ -132,7 +132,7 @@ def wl_save(host, apihost, tenant, token, infdate):
     alltest = wl_testbatch(host, apihost, tenant, token)
     # print(alltest)
     url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
-    headers = {'Host': apihost, 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
+    headers = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
         'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
         '.AspNetCore.Culture': 'zh-hans', 'Content-Type': 'application/json;charset=UTF-8', 'Origin': host,
@@ -208,7 +208,8 @@ def wl_slm_ori(date, testname, sampno):
     # print('整版的内容', slm)
     return slm
 
-# print(wl_save('http://192.168.1.112:1002', 'http://192.168.1.112:21021', '3',
-#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMyIsInN1YiI6IjEwMDA2IiwianRpIjoiNTdiZTMyZmQtZmI5NC00NGI3LWExZjQtNWJkMWQ3ODk4ODBlIiwiaWF0IjoxNjc3NDU4NTQyLCJuYmYiOjE2Nzc0NTg1NDIsImV4cCI6MTY3NzU0NDk0MiwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.igrig9y-8lQmchH-MFnlSdnuIrShFH4UIXSGF3u5cHU',
-#               [{'BillNo': '030010700173230227', 'PositionNo': 'A02', 'HBsAg': '+', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '030010700176230227', 'PositionNo': 'B02', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '030121000074230227', 'PositionNo': 'C02', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}]
+
+# print(wl_batchinformation('http://192.168.1.112:1002', 'http://192.168.1.112:21021', '3',
+#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMyIsInN1YiI6IjEwMDA2IiwianRpIjoiMzVmM2FhYWItOTZmNC00NTg5LWE0ZDItNWYwOGRjZWJkYzI4IiwiaWF0IjoxNjc3NjQ5MTc5LCJuYmYiOjE2Nzc2NDkxNzksImV4cCI6MTY3NzczNTU3OSwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.mC7LwMFghNLXsiSh8g-54BLDFpe8ZnqjEgsgCHKkk34'
 # ))
+

@@ -379,13 +379,17 @@ class QmyWidget(QWidget):
                                 'TPAb': self.ui.tableWidget_3.item(i, 6).text()})
             else:
                 self.ui.textBrowser.append('{} 第 {} 行中出现空值，无法解析'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), i + 1))
-        re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
-        for ii in range(0, len(re)):
-            try:
-                self.sqlupdate(re[ii][2])
-                self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
-            except:
-                self.ui.textBrowser.append('{} 在解析{}项目时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
+        try:
+            re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+            for ii in range(0, len(re)):
+                try:
+                    self.sqlupdate(re[ii][2])
+                    self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
+                    self.infectious()
+                except:
+                    self.ui.textBrowser.append('{} 在解析{}项目时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
+        except:
+            self.ui.textBrowser.append('{} 在解析时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())))
 
 
 if __name__ == "__main__":  # 用于当前窗体测试
