@@ -111,6 +111,7 @@ class QmyWidget(QWidget):
                 print(tenancyName)
                 self.ui.textBrowser.append(
                     '{} {} 数据库连接成功'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), self.sqldb))
+                self.tenancyName = tenancyName[0][0]
                 if '丹霞' in tenancyName[0][0]:
                     self.danxia()
                 else:
@@ -119,7 +120,6 @@ class QmyWidget(QWidget):
                 self.infectious()
                 self.ui.textBrowser.append(
                     '{} {} 解析初始化成功'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), tenantname))
-                self.tenancyName = tenancyName[0][0]
             else:
                 self.ui.tableWidget.clear()
                 self.ui.textBrowser.append(
@@ -319,7 +319,10 @@ class QmyWidget(QWidget):
         self.ui.tableWidget_3.setRowCount(1)
         self.ui.tableWidget_3.setColumnCount(7)
         self.ui.tableWidget_3.setColumnHidden(0, True)
-        self.ui.tableWidget_3.setHorizontalHeaderLabels(['Code', '孔位', '流水号', 'HBsAg', 'HCVAb', 'HIVAb', '梅毒'])
+        if '丹霞' in self.tenancyName:
+            self.ui.tableWidget_3.setHorizontalHeaderLabels(['Code', '排序号', '流水号', 'HBsAg', 'HCVAb', 'HIVAb', '梅毒'])
+        else:
+            self.ui.tableWidget_3.setHorizontalHeaderLabels(['Code', '孔位', '流水号', 'HBsAg', 'HCVAb', 'HIVAb', '梅毒'])
         self.ui.tableWidget_3.setColumnWidth(1, 80)
         self.ui.tableWidget_3.setColumnWidth(2, 145)
         self.ui.tableWidget_3.setColumnWidth(3, 50)
@@ -341,7 +344,7 @@ class QmyWidget(QWidget):
 
     def billnolist(self):  # 传染数据生成
         self.ui.tableWidget_3.setRowCount(1)
-        sql = findbill(self.tenantid)
+        sql = findbill(self.tenantid, self.tenancyName)
         try:
             billlist = self.sqlsel(sql)
 
@@ -352,8 +355,12 @@ class QmyWidget(QWidget):
                 for r in range(0, len(row)):
                     if bi < len(billlist):
                         self.ui.tableWidget_3.setItem(bi, 0, QtWidgets.QTableWidgetItem(str(billlist[bi][0])))
-                        self.ui.tableWidget_3.setItem(bi, 1,
-                                                      QtWidgets.QTableWidgetItem(str('{}{}'.format(row[r], col[c]))))
+                        if '丹霞' in self.tenancyName:
+                            self.ui.tableWidget_3.setItem(bi, 1, QtWidgets.QTableWidgetItem(
+                                str('{}'.format(billlist[bi][1]))))
+                        else:
+                            self.ui.tableWidget_3.setItem(bi, 1, QtWidgets.QTableWidgetItem(
+                                str('{}{}'.format(row[r], col[c]))))
                         self.ui.tableWidget_3.setItem(bi, 2, QtWidgets.QTableWidgetItem(
                             str(billlist[bi][0].split('-', 2)[-1])))
                         if bi + 1 < len(billlist):
@@ -378,7 +385,13 @@ class QmyWidget(QWidget):
                 self.ui.textBrowser.append('{} 第 {} 行中出现空值，无法解析'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), i + 1))
         if len(infdate) > 0:
             try:
-                re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+                if '丹霞' in self.tenancyName:
+                    print(infdate)
+
+                    # re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+                else:
+                    re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+
                 for ii in range(0, len(re)):
                     try:
                         self.sqlupdate(re[ii][2])
