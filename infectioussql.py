@@ -232,13 +232,6 @@ def dx_batchinformation(host, apihost, tenant, token):
         'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
     r = requests.get(url, headers=headers)
     batchs = r.json()['result']
-    # for i in range(0, len(item)):
-    #     # print(item[i]['testItemId'])
-    #     print(item[i])
-    #     for b in range(0, len(batchs)):
-    #         # print(batchs[b]['baseMaterial']['testItemId'])
-    #         if str(item[i]['testItemId']) in str(batchs[b]['baseMaterial']['testItemId']):
-    #             print(batchs[b])
 
     HBsAg = ['HBsAg']
     HCVAb = ['HCVAb']
@@ -285,19 +278,85 @@ def dx_batchinformation(host, apihost, tenant, token):
                             Syphilis.append(batchs[j])
                         break
     # 打包给下一个方法使用
-    print(HBsAg)
     alltest = [HBsAg, HIVAb, HCVAb, Syphilis]
     return alltest
 
 
+# 丹霞样板基本结构
+def dx_layoutmanagementbetail(inf, batchnumber):
+    jsondata = {
+        "billStatus": 0,
+        "batchNumber": batchnumber,
+        "batchRemark": "{}".format(time.strftime("%Y%m%d%H%M%S", time.localtime())),
+        "testItemId": int(inf[1]['testItemId']),
+        "inspectionTemplate": inf[1]['billNo'],
+        "samplePlateNumber": "{}".format(time.strftime("%Y%m%d%H%M%S", time.localtime())),
+        "reaBatchNumber": inf[2]['id'],
+        "qcBatchNumber": inf[3]['id'],
+        "sortDirection": 1,  # 横排竖排的字段，这里默认给横排
+        "sortSerialNumberStart": "",
+        "sortSerialNumberEnd": "",
+        "reaBatchInformation": inf[2],
+        "qcBatchInformation": inf[3],
+        "testTemplateMain": {"billStatus": 0},
+        "detailLists": inf[1]['detailLists']
+    }
+    row = []
+    col = []
+    li = inf[1]['detailLists']
+    for ii in range(0, len(li)):
+        jsondata["detailLists"][ii].update({"inspectionNo": jsondata["detailLists"][ii]["type"], "messageType": 0})  # 原数据里缺失【inspectionNo】【messageType】字段的
+        row.append(li[ii]['rowNum'])
+        col.append(li[ii]['columnNum'])
+    return max(row), max(col), jsondata
 
 
-# def dx_savenew():
-#     url = '/api/services/app/SpecimenLayoutManagementBetail/SaveNew'
+#丹霞获取版号号码
+def dx_getsinceplatenumber(host, apihost, tenant, token):
+    url = '{}/api/services/app/SpecimenLayoutManagementBetail/GetSincePlateNumber'.format(apihost)
+    headers = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive',
+        'Accept': 'application/json, text/plain, */*', 'Authorization': 'Bearer {}'.format(token),
+        'Abp.TenantId': tenant,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
+        '.AspNetCore.Culture': 'zh-hans', 'Origin': host,
+        'Referer': '{}/'.format(host), 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
+    r = requests.get(url, headers=headers)
+    res = '20' + r.json()['result']
+    return res
 
 
+# 丹霞样板种加入样本
+def dx_savenew(host, apihost, tenant, token, date):
+    url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
+    headers = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive',
+        'Accept': 'application/json, text/plain, */*', 'Authorization': 'Bearer {}'.format(token),
+        'Abp.TenantId': tenant,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
+        '.AspNetCore.Culture': 'zh-hans', 'Content-Type': 'application/json;charset=UTF-8',
+        'Origin': host, 'Referer': '{}/'.format(host),
+        'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
+    batchs = dx_batchinformation(host, apihost, tenant, token)
+    for i in range(0, len(batchs)):
+        inf = batchs[i]
+        batchNumber = dx_getsinceplatenumber(host, apihost, tenant, token)
+        betail = dx_layoutmanagementbetail(inf, batchNumber)
+        positionno = []  # 这里是想把排序号拿出来，找到排序的最大值与最小值。用来更新【sortSerialNumberStart】【】
+        # 这里的这个方式只能是横排的。
+        for d in range(0, len(date)):
+            positionno.append(int(date[d]['PositionNo']))
+            r = int((d + betail[1])/12) + betail[0]
+            c = d + betail[1] + 1
+            betail[2]['detailLists'].append({"type": int(date[d]['PositionNo']), "inspectionNo": int(date[d]['PositionNo']), "messageType": 1, "rowNum": r, "columnNum": c})
+        betail[2].update({"sortSerialNumberStart": min(positionno)})
+        betail[2].update({"sortSerialNumberEnd": max(positionno)})
+        print(betail[2]['detailLists'])
+        r = requests.post(url, headers=headers, data=json.dumps(betail[2], ensure_ascii=False).encode("utf-8"))
+        print(r.text)
+        time.sleep(1)
 
-# print(dx_batchinformation('http://192.168.1.112:1001', 'http://192.168.1.112:2001', '3',
-#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6WyJBZG1pbiIsIuWuoeaguCJdLCJodHRwOi8vd3d3LmFzcG5ldGJvaWxlcnBsYXRlLmNvbS9pZGVudGl0eS9jbGFpbXMvdGVuYW50SWQiOiIzIiwic3ViIjoiMTAwMDYiLCJqdGkiOiJjNDE4NTVmZS0wNzQxLTRmMDEtYjllYy0zZmRiYzNiZThiZDIiLCJpYXQiOjE2Nzc4MTQ1MDEsIm5iZiI6MTY3NzgxNDUwMSwiZXhwIjoxNjc3OTAwOTAxLCJpc3MiOiJNa0NoZWNrU3lzdGVtIiwiYXVkIjoiTWtDaGVja1N5c3RlbSJ9.tsWtvhpJ53VhjLi46TzckL9VyW9Je_CKCQ86oUPZbwk'
+
+# print(dx_savenew('http://192.168.1.112:1001', 'http://192.168.1.112:2001', '3',
+#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6WyJBZG1pbiIsIuWuoeaguCJdLCJodHRwOi8vd3d3LmFzcG5ldGJvaWxlcnBsYXRlLmNvbS9pZGVudGl0eS9jbGFpbXMvdGVuYW50SWQiOiIzIiwic3ViIjoiMTAwMDYiLCJqdGkiOiI2YzIzYjNlZi04ZDQ5LTRhNzctODc1Zi1lMDNhMWM5MjA2Y2IiLCJpYXQiOjE2NzgxNTE0OTAsIm5iZiI6MTY3ODE1MTQ5MCwiZXhwIjoxNjc4MjM3ODkwLCJpc3MiOiJNa0NoZWNrU3lzdGVtIiwiYXVkIjoiTWtDaGVja1N5c3RlbSJ9.GwOabpLOVSXoNba1jo4enrilRaibpc26uOPvAWTIbck',
+# [{'BillNo': '2023030701', 'PositionNo': '1', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '2023030702', 'PositionNo': '2', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '2023030703', 'PositionNo': '3', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}]
 # ))
 
