@@ -1,6 +1,6 @@
 def hblist(tenant, tenantname):
     if '卫光' in tenantname or '卫伦' in tenantname:
-        sql = "select a.BillNo from Specimen a join TestItem b on 1 = 1 and b.Type = 7 and b.TenantId = "+tenant+" left join SampleResults c on c.SpecimenBillNo = a.BillNo and c.BillStatus = 3 and c.TestItemId = b.Id where a.TenantId = "+tenant+" and datediff(day, a.CreationTime, getdate()) = 0 and c.Id is null"
+        sql = "select a.BillNo from Specimen a join TestItem b on 1 = 1 and b.Type = 7 and b.TenantId = "+tenant+" left join SampleResults c on c.SpecimenBillNo = a.BillNo and c.BillStatus = 3 and c.TestItemId = b.Id where a.TenantId = "+tenant+" and a.SampleTestType <> 3 and datediff(day, a.CreationTime, getdate()) = 0 and c.Id is null"
     else:
         sql = "select a.SpecimenBillNo from SpecimenBatchManagementDetail a join TestItem b on 1 = 1 and b.Type = 7 and b.TenantId = "+tenant+" left join SampleResults c on c.SpecimenBillNo = a.SpecimenBillNo and c.BillStatus = 3 where a.TenantId = "+tenant+" and datediff(day,a.CreationTime,getdate()) = 0 and c.Id is null"
     return sql
