@@ -14,18 +14,17 @@ def findlist(tenant, tenantname):
                       and c.OriginalResults is null
                     group by a.BillNo,s.SerialNumber order by s.SerialNumber'''.format(tenant, tenant)
     elif '卫伦' in tenantname:
-        sql = '''select distinct a.BillNo, iif(b.PlateNo is null, iif(c.m is null ,0,c.m) + ROW_NUMBER() OVER (ORDER BY (SELECT 1)), b.PlateNo) row
+        sql = '''select distinct a.BillNo, iif(c.m is null ,0,c.m) + ROW_NUMBER() OVER (ORDER BY (SELECT 1)) row
                 from (select a.BillNo
                       from Specimen a
                                join TestItem b on 1 = 1 and b.Type in (1, 2)
                                left join SampleResults c on c.SpecimenBillNo = a.BillNo and b.Id = c.TestItemId and c.BillStatus = 3
-                      where (b.Name like '%TP%' or b.Name like '%ALT%') and a.SampleTestType <> 4
+                      where (b.Name like '%TP%' or b.Name like '%ALT%') and a.SampleTestType <> 3
                         and a.TenantId = {}
                         and b.TenantId = {}
                         and datediff(day, a.CreationTime, getdate()) = 0 and c.Id is null
                       group by a.BillNo) a
-                         left join SampleResults b on a.BillNo = b.SpecimenBillNo and b.BillStatus = 3
-                         outer apply (select max(SampleResults.PlateNo) m from SampleResults where datediff(day, CreationTime, getdate()) = 0 and BillStatus = 3) c
+                         outer apply (select max(SampleResults.PlateNo) m from SampleResults where datediff(day, CreationTime, getdate()) = 0) c
                 order by row'''.format(tenant, tenant)
     else:
         sql = '''select a.BillNo, ROW_NUMBER() OVER (ORDER BY (SELECT 1)) AS row
@@ -54,8 +53,8 @@ def baseinfo(date):
 def sampleresults(tenant, tenancyName, date, base):
     SampleTestType = base[1]
     IsAnticoagulant = base[3]
-    print(type(SampleTestType), type(IsAnticoagulant), type(float(date['TP'])))
-    print(SampleTestType, IsAnticoagulant, float(date['TP']))
+    # print(type(SampleTestType), type(IsAnticoagulant), type(float(date['TP'])))
+    # print(SampleTestType, IsAnticoagulant, float(date['TP']))
 
     if SampleTestType == 0 and IsAnticoagulant is True and float(date['TP']) < 55:
         tpResults = '异常'
