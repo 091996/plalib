@@ -19,7 +19,7 @@ def findlist(tenant, tenantname):
                       from Specimen a
                                join TestItem b on 1 = 1 and b.Type in (1, 2)
                                left join SampleResults c on c.SpecimenBillNo = a.BillNo and b.Id = c.TestItemId and c.BillStatus = 3
-                      where (b.Name like '%TP%' or b.Name like '%ALT%')
+                      where (b.Name like '%TP%' or b.Name like '%ALT%') and a.SampleTestType <> 4
                         and a.TenantId = {}
                         and b.TenantId = {}
                         and datediff(day, a.CreationTime, getdate()) = 0 and c.Id is null
