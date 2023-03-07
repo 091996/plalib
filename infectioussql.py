@@ -30,9 +30,14 @@ def findbill(tenant, name):
     return sql
 
 # 卫伦先找出酶免4项的检验项目信息
-def wl_getallpage(apihost):
+def wl_getallpage(host, apihost, tenant, token):
     url = '{}/api/services/app/TestItem/GetAllPage'.format(apihost)
-    r = requests.get(url)
+    header = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
+        'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
+        '.AspNetCore.Culture': 'zh-hans', 'Origin': host, 'Referer': '{}/'.format(host),
+        'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
+    r = requests.get(url, headers=header)
     inf = r.json()['result']
     re = []
     for i in range(0, len(inf)):
@@ -53,7 +58,7 @@ def wl_batchinformation(host, apihost, tenant, token):
 
 # 卫伦根据项目找出试剂、质控
 def wl_testbatch(host, apihost, tenant, token):
-    test = wl_getallpage(apihost)
+    test = wl_getallpage(host, apihost, tenant, token)
     batch = wl_batchinformation(host, apihost, tenant, token)
     HBsAg = ['HBsAg']
     HCVAb = ['HCVAb']
