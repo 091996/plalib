@@ -12,7 +12,9 @@ def findbill(tenant, name):
                              join TestItem b on 1 = 1 and b.Type in (3, 4, 5, 6)
                              left join SampleResults c on a.BillNo = c.SpecimenBillNo and b.Id = c.TestItemId and c.BillStatus = 3
                              left join SpecimenBatchManagementDetail d on d.SpecimenBillNo = a.BillNo
-                    where a.TenantId = {}
+                             outer apply (select IsCheck from QuickCheckResult where SpecimenBillNo = a.BillNo) e
+                    where (a.SampleTestType <> 0 or (a.SampleTestType = 0 and e.IsCheck = 1)) and a.BillStatus <> 4 and a.SampleTestType <> 3
+                      and a.TenantId = {}
                       and b.TenantId = {}
                       and datediff(day, d.CreationTime, getdate()) = 0
                       and c.OriginalResults is null
@@ -22,10 +24,11 @@ def findbill(tenant, name):
                     from Specimen a
                              join TestItem b on 1 = 1 and b.Type in (3, 4, 5, 6)
                              left join SampleResults c on a.BillNo = c.SpecimenBillNo and b.Id = c.TestItemId and c.BillStatus = 3
-                    where a.TenantId = {}
-                      and b.TenantId = {}
-                      and datediff(day, a.CreationTime, getdate()) = 0
-                      and c.OriginalResults is null
+                             outer apply (select IsCheck from QuickCheckResult where SpecimenBillNo = a.BillNo) d
+                    where (a.SampleTestType <> 0 or (a.SampleTestType = 0 and d.IsCheck = 1)) and a.BillStatus <> 4 and a.SampleTestType <> 3
+                    and a.TenantId = {} 
+                    and b.TenantId = {}
+                    and datediff(day, a.CreationTime, getdate()) = 0
                     group by a.BillNo""".format(tenant, tenant)
     return sql
 
@@ -141,7 +144,7 @@ def wl_save(host, apihost, tenant, token, infdate):
         time.sleep(1)
         sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'"+DataSource+"', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
         # print([alltest[i][0], sql])
-        ret.append([alltest[i][0], billinf['samplePlateNumber'], sql])
+        ret.append([alltest[i][0], r.json()['error'], sql])
     return ret
 
 # 卫伦生成样板内容
@@ -193,9 +196,10 @@ def wl_slm_ori(date, testname, sampno):
             ori.update(tpabf)
             ori.update({'Result': '阳性'})
 
-        ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
-        ii.update(ori)
-        slm["SampleResults"].append(ii)
+        if 'Result' in ori:
+            ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
+            ii.update(ori)
+            slm["SampleResults"].append(ii)
     slm = json.dumps(slm)
     # print('整版的内容', slm)
     return slm
@@ -237,7 +241,6 @@ def dx_batchinformation(host, apihost, tenant, token):
         'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
     r = requests.get(url, headers=headers)
     batchs = r.json()['result']
-
     HBsAg = ['HBsAg']
     HCVAb = ['HCVAb']
     HIVAb = ['HIVAb']
@@ -258,7 +261,7 @@ def dx_batchinformation(host, apihost, tenant, token):
             if str(item[i]['testItemId']) in str(batchs[ii]['baseMaterial']['testItemId']):
                 if batchs[ii]['baseMaterial']['materialType'] == 0:
                     if batchs[ii]['inventory']['qty'] != 0:
-                        # print('试剂', batch[ii])
+                        # print('试剂', batchs[ii])
                         if item[i]['testItem']['type'] == 3:
                             HBsAg.append(batchs[ii])
                         elif item[i]['testItem']['type'] == 4:
@@ -268,9 +271,10 @@ def dx_batchinformation(host, apihost, tenant, token):
                         elif item[i]['testItem']['type'] == 6:
                             Syphilis.append(batchs[ii])
                         break
+
         for j in range(0, len(batchs)):
             # materialType 枚举  0试剂；1质控
-            if str(item[i]['testItemId']) in str(batchs[ii]['baseMaterial']['testItemId']):
+            if str(item[i]['testItemId']) in str(batchs[j]['baseMaterial']['testItemId']):
                 if batchs[j]['baseMaterial']['materialType'] == 1:
                     if batchs[j]['inventory']['qty'] != 0:
                         if item[i]['testItem']['type'] == 3:
@@ -291,11 +295,11 @@ def dx_batchinformation(host, apihost, tenant, token):
 def dx_layoutmanagementbetail(inf, batchnumber):
     jsondata = {
         "billStatus": 0,
-        "batchNumber": batchnumber,
-        "batchRemark": "{}".format(time.strftime("%Y%m%d%H%M%S", time.localtime())),
+        "batchNumber": "{}01".format(time.strftime("%Y%m%d", time.localtime())),
+        "batchRemark": batchnumber,
         "testItemId": int(inf[1]['testItemId']),
         "inspectionTemplate": inf[1]['billNo'],
-        "samplePlateNumber": "{}".format(time.strftime("%Y%m%d%H%M%S", time.localtime())),
+        "samplePlateNumber": batchnumber,
         "reaBatchNumber": inf[2]['id'],
         "qcBatchNumber": inf[3]['id'],
         "sortDirection": 1,  # 横排竖排的字段，这里默认给横排
@@ -310,7 +314,8 @@ def dx_layoutmanagementbetail(inf, batchnumber):
     col = []
     li = inf[1]['detailLists']
     for ii in range(0, len(li)):
-        jsondata["detailLists"][ii].update({"inspectionNo": jsondata["detailLists"][ii]["type"], "messageType": 0})  # 原数据里缺失【inspectionNo】【messageType】字段的
+        # 原数据里缺失【inspectionNo】【messageType】字段
+        jsondata["detailLists"][ii].update({"inspectionNo": jsondata["detailLists"][ii]["type"], "messageType": 0})
         row.append(li[ii]['rowNum'])
         col.append(li[ii]['columnNum'])
     return max(row), max(col), jsondata
@@ -326,12 +331,86 @@ def dx_getsinceplatenumber(host, apihost, tenant, token):
         '.AspNetCore.Culture': 'zh-hans', 'Origin': host,
         'Referer': '{}/'.format(host), 'Accept-Encoding': 'gzip, deflate', 'Accept-Language': 'zh-CN,zh;q=0.9'}
     r = requests.get(url, headers=headers)
-    res = '20' + r.json()['result']
+    res = r.json()['result']
     return res
 
 
-# 丹霞样板种加入样本
+# 样板数据生成
+def detaillists(platenumber, testname, typeid, date, detail):
+    # typeid 3:HBsAg;4:HCVAb;5:HIVAb;6:TPAb
+    a = {"BatchInfoName": "", "SpecimenBillNo": "", "PositionNo": "", "Info": "", "OriginResult": "", "AnalysisInfo": "", "Result": ""}  # 这个是孔的信息
+    row = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']  # 这里做个对应 rowNum
+    col = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']  # 这里可以用 columnNum 作为下标找到对应的值
+    # 定义好基本的标本内容
+
+    N = {"Info": "0.002", "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"}
+    P = [{"Info": "3.319", "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "+"}, {"Info": "3.361", "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "+"}]
+    Q = {"Info": "0.419", "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "+"}
+
+    hbsagy = [{"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.010", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.019", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.029", "Result": "-"}]
+    hbsagf = {"Info": "0.306", "OriginResult": "0.306", "AnalysisInfo": "2.914", "Result": "+"}
+
+    hcvaby = [{"Info": "0.000", "OriginResult": "0.000", "AnalysisInfo": "0.000", "Result": "-"}, {"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.008", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.016", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.025", "Result": "-"}, {"OriginResult": "0.004", "AnalysisInfo": "0.033", "Result": "-"}]
+    hcvabf = {"Info": "0.572", "OriginResult": "0.572", "AnalysisInfo": "4.689", "Result": "+"}
+
+    hivaby = [{"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.008", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.019", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.029", "Result": "-"}]
+    hivabf = {"Info": "0.216", "OriginResult": "0.216", "AnalysisInfo": "1.756", "Result": "+"}
+
+    tpaby = [{"Info": "0.000", "OriginResult": "0.000", "AnalysisInfo": "0.000", "Result": "-"}, {"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.006", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.011", "Result": "-"}]
+    tpabf = {"Info": "0.711", "OriginResult": "0.711", "AnalysisInfo": "2.843", "Result": "+"}
+
+    ii = len(detail) - len(date)  # 这里计算样板模板里有几个固定的
+    sol = {"TestName": testname, "Operator": "Administrator", "TestTime": "{}".format(time.strftime("%Y年%m月%d日 %H:%M:%S", time.localtime())), "PlateNo": platenumber, "SampleResults": []}
+    for i in range(0, len(detail)):
+        if i >= ii:
+            among = date[i-ii]
+            a.update({"BatchInfoName": "SMP", "SpecimenBillNo": among['BillNo'], "PositionNo": "{}{}".format(row[detail[i]['rowNum']], col[detail[i]['columnNum']])})
+            if int(typeid) == 3 and among['HBsAg'] == '-':
+                a.update(random.choice(hbsagy))
+            elif int(typeid) == 3 and among['HBsAg'] == '+':
+                a.update(random.choice(hbsagf))
+
+            elif int(typeid) == 4 and among['HCVAb'] == '-':
+                a.update(random.choice(hcvaby))
+            elif int(typeid) == 4 and among['HCVAb'] == '+':
+                a.update(random.choice(hcvabf))
+
+            elif int(typeid) == 5 and among['HIVAb'] == '-':
+                a.update(random.choice(hivaby))
+            elif int(typeid) == 5 and among['HIVAb'] == '+':
+                a.update(random.choice(hivabf))
+
+            elif int(typeid) == 6 and among['TPAb'] == '-':
+                a.update(random.choice(tpaby))
+            elif int(typeid) == 6 and among['TPAb'] == '+':
+                a.update(random.choice(tpabf))
+        else:
+            among = detail[i]
+            if 'N' in among['type']:
+                a.update({"BatchInfoName": "NC", "SpecimenBillNo": "NC", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                a.update(N)
+            elif 'P' in among['type']:
+                a.update({"BatchInfoName": "PC", "SpecimenBillNo": "PC", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                a.update(random.choice(P))
+            elif 'Q' in among['type']:
+                if int(typeid) == 3:
+                    a.update({"BatchInfoName": "QC-HBsAg", "SpecimenBillNo": "QC-HBsAg", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                elif int(typeid) == 4:
+                    a.update({"BatchInfoName": "QC-HCVAb", "SpecimenBillNo": "QC-HCVAb", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                elif int(typeid) == 5:
+                    a.update({"BatchInfoName": "QC-HIVAb", "SpecimenBillNo": "QC-HIVAb", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                elif int(typeid) == 6:
+                    a.update({"BatchInfoName": "QC-TPAb", "SpecimenBillNo": "QC-TPAb", "PositionNo": "{}{}".format(row[among['rowNum']], col[among['columnNum']])})
+                a.update(Q)
+        if a['BatchInfoName'] != '':  # 不知道为啥，会出现空值的情况
+            sol['SampleResults'].append(a)
+        a = {"BatchInfoName": "", "SpecimenBillNo": "", "PositionNo": "", "Info": "", "OriginResult": "", "AnalysisInfo": "", "Result": ""}  # 加在这里是重置一下，不重置会一直更新
+    return sol
+
+
+# 丹霞样板中加入样本
 def dx_savenew(host, apihost, tenant, token, date):
+    relist = []
     url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
     headers = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive',
         'Accept': 'application/json, text/plain, */*', 'Authorization': 'Bearer {}'.format(token),
@@ -354,14 +433,20 @@ def dx_savenew(host, apihost, tenant, token, date):
             betail[2]['detailLists'].append({"type": int(date[d]['PositionNo']), "inspectionNo": int(date[d]['PositionNo']), "messageType": 1, "rowNum": r, "columnNum": c})
         betail[2].update({"sortSerialNumberStart": min(positionno)})
         betail[2].update({"sortSerialNumberEnd": max(positionno)})
-        print(betail[2]['detailLists'])
+        # print(inf)
+        # print(betail[2]['samplePlateNumber'], inf[1]['name'], inf[1]['testItem']['type'], date, betail[2]['detailLists'])
+        s = detaillists(betail[2]['samplePlateNumber'], inf[0], inf[1]['testItem']['type'], date, betail[2]['detailLists'])
+        DataSource = json.dumps(s, ensure_ascii=False)
         r = requests.post(url, headers=headers, data=json.dumps(betail[2], ensure_ascii=False).encode("utf-8"))
-        print(r.text)
+        # print(r.text)
+        sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES ((select Value from SysConfigure where TenantId = "+tenant+" and Code = 'ALY01'), N'"+DataSource+"', N'"+betail[2]['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, null, null);"
+        relist.append([inf[1]['name'], r.json()['error'], sql])
         time.sleep(1)
+    return relist
 
 
 # print(dx_savenew('http://192.168.1.112:1001', 'http://192.168.1.112:2001', '3',
-#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6WyJBZG1pbiIsIuWuoeaguCJdLCJodHRwOi8vd3d3LmFzcG5ldGJvaWxlcnBsYXRlLmNvbS9pZGVudGl0eS9jbGFpbXMvdGVuYW50SWQiOiIzIiwic3ViIjoiMTAwMDYiLCJqdGkiOiI2YzIzYjNlZi04ZDQ5LTRhNzctODc1Zi1lMDNhMWM5MjA2Y2IiLCJpYXQiOjE2NzgxNTE0OTAsIm5iZiI6MTY3ODE1MTQ5MCwiZXhwIjoxNjc4MjM3ODkwLCJpc3MiOiJNa0NoZWNrU3lzdGVtIiwiYXVkIjoiTWtDaGVja1N5c3RlbSJ9.GwOabpLOVSXoNba1jo4enrilRaibpc26uOPvAWTIbck',
+#               'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA2IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjExMUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMyIsInN1YiI6IjEwMDA2IiwianRpIjoiYmMwMjkxNTEtZTg0OC00MjYxLWEzZWYtMzE1YjAwZDE5NzM1IiwiaWF0IjoxNjc4MjQ4MDYzLCJuYmYiOjE2NzgyNDgwNjMsImV4cCI6MTY3ODMzNDQ2MywiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.hFGN0vhYALeGi8pxeqBoH15wNTY0B2_PD16PzF4MKKE',
 # [{'BillNo': '2023030701', 'PositionNo': '1', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '2023030702', 'PositionNo': '2', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}, {'BillNo': '2023030703', 'PositionNo': '3', 'HBsAg': '-', 'HCVAb': '-', 'HIVAb': '-', 'TPAb': '-'}]
 # ))
 
