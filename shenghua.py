@@ -46,7 +46,8 @@ def baseinfo(date):
     # SampleTestType 枚举：0体检血样；1血辫血样；2回访血样；3电泳血样
     # Gender 枚举：1男；2女
     # IsAnticoagulant 是否带抗凝剂
-    sql = "select BillNo,SampleTestType,Gender,IsAnticoagulant,PlasmaType from Specimen where BillNo = '{}'".format(date['Code'])
+    sql = "select BillNo,SampleTestType,Gender,IsAnticoagulant from Specimen where BillNo = '{}'".format(date['Code'])
+    print(sql)
     return sql
 
 
