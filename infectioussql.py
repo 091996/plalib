@@ -153,7 +153,6 @@ def wl_save(tenantname, host, apihost, tenant, token, infdate):
         r = requests.post(url, headers=headers, json=body)
         billinf = r.json()['result']
         # print(billinf)
-        # print('项目', alltest[i][0])
         # print(infdate)
         DataSource = wl_slm_ori(infdate, alltest[i][0], billinf['samplePlateNumber'], tenantname)
         # print(DataSource.encode('utf-8').decode('unicode_escape'))
@@ -393,22 +392,22 @@ def detaillists(platenumber, testname, typeid, date, detail):
             if int(typeid) == 3 and among['HBsAg'] == '-':
                 a.update(random.choice(hbsagy))
             elif int(typeid) == 3 and among['HBsAg'] == '+':
-                a.update(random.choice(hbsagf))
+                a.update(hbsagf)
 
             elif int(typeid) == 4 and among['HCVAb'] == '-':
                 a.update(random.choice(hcvaby))
             elif int(typeid) == 4 and among['HCVAb'] == '+':
-                a.update(random.choice(hcvabf))
+                a.update(hcvabf)
 
             elif int(typeid) == 5 and among['HIVAb'] == '-':
                 a.update(random.choice(hivaby))
             elif int(typeid) == 5 and among['HIVAb'] == '+':
-                a.update(random.choice(hivabf))
+                a.update(hivabf)
 
             elif int(typeid) == 6 and among['TPAb'] == '-':
                 a.update(random.choice(tpaby))
             elif int(typeid) == 6 and among['TPAb'] == '+':
-                a.update(random.choice(tpabf))
+                a.update(tpabf)
         else:
             among = detail[i]
             if 'N' in among['type']:
