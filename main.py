@@ -235,22 +235,35 @@ class QmyWidget(QWidget):
                 basesql = baseinfo(date[i])
                 base = self.sqlsel(basesql)
                 # print(base[0])
-                sql = sampleresults(tenant, self.tenancyName, date[i], base[0])
+                if self.ui.radioButton.isChecked() == True:  # 快速生成就是不走解析过程直接插入数据
+                    carrystatus = 1
+                else:
+                    carrystatus = 0
+                print(date[i])
+                sql = sampleresults(tenant, self.tenancyName, date[i], base[0], carrystatus)
                 # print(sql)
                 status = 0
                 for ii in range(0, len(sql)):
-                    r = self.sqlupdate(sql[ii])
-                    if r == 'success':
-                        self.ui.textBrowser.append(
-                            '{} 流水号 {} 生化数据插入成功'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-                                                        date[i]["BillNo"]))
-                        status = 1
-                    else:
-                        self.ui.textBrowser.append(
-                            '{} 执行流水号 {} 生化数据插入时出现错误 {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-                                                                date[i]["BillNo"], r))
-                        status = 0
-                        break
+                    if sql[ii] is not None:
+                        r = self.sqlupdate(sql[ii])
+                        if r == 'success':
+                            # 插入成功就执行解析
+                            if carrystatus == 0:
+                                oriidsql = seltopori(tenant, self.tenancyName)
+                                oriid = self.sqlsel(oriidsql)
+                                print(oriid[0][0])
+                                orires = OriginalResult(tenant, self.tenancyName, self.api, int(oriid[0][0]))
+                                self.ui.textBrowser.append('{} {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), orires))
+                            self.ui.textBrowser.append(
+                                '{} 流水号 {} 生化数据插入成功'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                                            date[i]["BillNo"]))
+                            status = 1
+                        else:
+                            self.ui.textBrowser.append(
+                                '{} 执行流水号 {} 生化数据插入时出现错误 {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                                                    date[i]["BillNo"], r))
+                            status = 0
+                            break
             except:
                 self.ui.textBrowser.append(
                     '{} 操作 {} 时发生未知错误'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), date[i]["BillNo"]))
@@ -387,7 +400,7 @@ class QmyWidget(QWidget):
                 if '丹霞' in self.tenancyName:
                     re = dx_savenew(self.host, self.api, self.tenantid, self.token, infdate)
                 else:
-                    re = wl_save(self.host, self.api, self.tenantid, self.token, infdate)
+                    re = wl_save(self.tenancyName, self.host, self.api, self.tenantid, self.token, infdate)
                 for ii in range(0, len(re)):
                     try:
                         if re[ii][1] is None:
