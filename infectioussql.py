@@ -131,15 +131,17 @@ def wl_savebody(test):
         "testItemId": test[1]['id'],
         "samplePlateNumber": "{}{}".format(test[0], time.strftime("%Y%m%d%H%M%S", time.localtime())),
         "qcBatchNumber": test[3]['id'], "reaBatchNumber": test[2]['id'], "sortDirection": 1,
-        "batchRemark": "{}{}".format(test[0], time.strftime("%Y%m%d%H%M%S", time.localtime())), "detailLists": [],
+        "batchRemark": "{}01001".format(time.strftime("%Y%m%d", time.localtime())), "detailLists": [],
         "reaBatchInformation": test[2], "qcBatchInformation": test[3], "testTemplateMain": {"billStatus": 0}}
     return body
 
 # 卫伦保存样板
-def wl_save(host, apihost, tenant, token, infdate):
+def wl_save(tenantname, host, apihost, tenant, token, infdate):
     alltest = wl_testbatch(host, apihost, tenant, token)
-    # print(alltest)
-    url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
+    if '卫光' in tenantname:
+        url = '{}/api/services/app/SpecimenLayoutManagementBetail/Save'.format(apihost)
+    else:
+        url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
     headers = {'Host': apihost.split('//', -1)[1], 'Connection': 'keep-alive', 'Accept': 'application/json, text/plain, */*',
         'Authorization': 'Bearer {}'.format(token), 'Abp.TenantId': tenant,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
@@ -153,15 +155,19 @@ def wl_save(host, apihost, tenant, token, infdate):
         # print(billinf)
         # print('项目', alltest[i][0])
         # print(infdate)
-        DataSource = wl_slm_ori(infdate, alltest[i][0], billinf['samplePlateNumber'])
+        DataSource = wl_slm_ori(infdate, alltest[i][0], billinf['samplePlateNumber'], tenantname)
+        # print(DataSource.encode('utf-8').decode('unicode_escape'))
         time.sleep(1)
-        sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'"+DataSource+"', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
-        # print([alltest[i][0], sql])
+        if '卫光' in tenantname:
+            sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'URANUS-AE115', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'" + billinf['samplePlateNumber'] + "', 0, " + tenant + ", getdate(), null, getdate(), null);"
+        else:
+            sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
+        print([alltest[i][0], sql])
         ret.append([alltest[i][0], r.json()['error'], sql])
     return ret
 
 # 卫伦生成样板内容
-def wl_slm_ori(date, testname, sampno):
+def wl_slm_ori(date, testname, sampno, tenantname):
     slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "PlateNo": sampno, "CutOff": "0.123",
         "SampleResults": [
             {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "A01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
