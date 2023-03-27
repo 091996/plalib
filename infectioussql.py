@@ -19,6 +19,12 @@ def findbill(tenant, name):
                       and datediff(day, d.CreationTime, getdate()) = 0
                       and c.OriginalResults is null
                     group by a.BillNo, d.SerialNumber order by d.SerialNumber""".format(tenant, tenant)
+    elif '卫光' in name:
+        sql = """select a.BillNo from Specimen a
+                    join TestItem b on 1 = 1 and b.Type in (3, 4, 5, 6)
+                    left join SampleResults c on c.SpecimenBillNo = a.BillNo and c.TestItemId = b.Id and c.BillStatus = 3
+                where a.BillStatus <> 4 and a.TenantId = {} and b.TenantId = {} and datediff(day, a.CreationTime, getdate()) = 0
+                group by a.BillNo""".format(tenant, tenant)
     else:
         sql = """select a.BillNo
                     from Specimen a
