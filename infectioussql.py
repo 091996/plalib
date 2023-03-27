@@ -219,6 +219,12 @@ def wl_slm_ori(date, testname, sampno, tenantname):
             ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
             ii.update(ori)
             slm["SampleResults"].append(ii)
+        if '卫光' in tenantname:
+            for r in range(0, len(slm["SampleResults"])):
+                if slm["SampleResults"][r]['Result'] == '阳性':
+                    slm["SampleResults"][r].update({'Result': '+'})
+                else:
+                    slm["SampleResults"][r].update({'Result': '-'})
     slm = json.dumps(slm)
     # print('整版的内容', slm)
     return slm
