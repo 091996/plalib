@@ -88,32 +88,39 @@ def wl_testbatch(host, apihost, tenant, token):
             # materialType 枚举  0试剂；1质控
             if str(test[i]['id']) in batch[ii]['baseMaterial']['testItemId']:
                 if batch[ii]['baseMaterial']['materialType'] == 0:
-                    if batch[ii]['inventory']['qty'] != 0:
-                        # print('试剂', batch[ii])
-                        if test[i]['type'] == 3:
-                            HBsAg.append(batch[ii])
-                        elif test[i]['type'] == 4:
-                            HCVAb.append(batch[ii])
-                        elif test[i]['type'] == 5:
-                            HIVAb.append(batch[ii])
-                        elif test[i]['type'] == 6:
-                            Syphilis.append(batch[ii])
-                        break
+                    try:
+                        print(batch[ii]['inventory']['qty'])
+                        if batch[ii]['inventory']['qty'] != 0:
+                            # print('试剂', batch[ii])
+                            if test[i]['type'] == 3:
+                                HBsAg.append(batch[ii])
+                            elif test[i]['type'] == 4:
+                                HCVAb.append(batch[ii])
+                            elif test[i]['type'] == 5:
+                                HIVAb.append(batch[ii])
+                            elif test[i]['type'] == 6:
+                                Syphilis.append(batch[ii])
+                            break
+                    except:
+                        continue
         for j in range(0, len(batch)):
             # materialType 枚举  0试剂；1质控
             if str(test[i]['id']) in batch[j]['baseMaterial']['testItemId']:
                 if batch[j]['baseMaterial']['materialType'] == 1:
-                    if batch[j]['inventory']['qty'] != 0:
-                        # print('质控', batch[j])
-                        if test[i]['type'] == 3:
-                            HBsAg.append(batch[j])
-                        elif test[i]['type'] == 4:
-                            HCVAb.append(batch[j])
-                        elif test[i]['type'] == 5:
-                            HIVAb.append(batch[j])
-                        elif test[i]['type'] == 6:
-                            Syphilis.append(batch[j])
-                        break
+                    try:
+                        if batch[j]['inventory']['qty'] != 0:
+                            # print('质控', batch[j])
+                            if test[i]['type'] == 3:
+                                HBsAg.append(batch[j])
+                            elif test[i]['type'] == 4:
+                                HCVAb.append(batch[j])
+                            elif test[i]['type'] == 5:
+                                HIVAb.append(batch[j])
+                            elif test[i]['type'] == 6:
+                                Syphilis.append(batch[j])
+                            break
+                    except:
+                        continue
     # 打包给下一个方法使用
     alltest = [HBsAg, HIVAb, HCVAb, Syphilis]
     return alltest
