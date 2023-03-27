@@ -12,7 +12,7 @@ from IPConfig import getapihost
 from SqlServer import sqlselect, sqlup
 from hbanalysis import hblist, hbno, hbins
 from infectioussql import findbill, wl_save, dx_savenew
-from shenghua import findlist, sampleresults, findbillno, baseinfo
+from shenghua import findlist, sampleresults, findbillno, baseinfo, seltopori, OriginalResult
 
 from untitled import Ui_Form
 
@@ -39,11 +39,10 @@ class QmyWidget(QWidget):
         self.ui.pushButton_2.clicked.connect(self.pushButton_2)  # 获取租户信息
         self.ui.lineEdit_2.setText('mkpmadmin')
         self.ui.lineEdit_3.setText('Maike123!@#')
-        self.ui.lineEdit_4.setText('192.168.1.197:49307')
+        self.ui.lineEdit_4.setText('192.168.1.114')
         self.ui.lineEdit_6.setText('sa')
         self.ui.lineEdit_7.setText('maike123!@#+1s')
-        database = ['JYXT20210608', 'JYXT20210608KF', 'JYXT20210608WG_TEMP', 'JYXT20210608WGKF', 'JYXT20210608WL',
-            'JYXT20210608WLKF']
+        database = ['PlasmaLibSystem_DX', 'PlasmaLibSystem_TL', 'PlasmaLibSystem_WG', 'PlasmaLibSystem_WL', 'PlasmaLibSystem_DXKF', 'PlasmaLibSystem_WGKF']
         for i in range(0, len(database)):
             self.ui.comboBox_2.addItem(database[i])
 
