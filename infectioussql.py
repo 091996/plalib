@@ -161,21 +161,31 @@ def wl_save(tenantname, host, apihost, tenant, token, infdate):
             sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'URANUS-AE115', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'" + billinf['samplePlateNumber'] + "', 0, " + tenant + ", getdate(), null, getdate(), null);"
         else:
             sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
-        print([alltest[i][0], sql])
+        # print([alltest[i][0], sql])
         ret.append([alltest[i][0], r.json()['error'], sql])
     return ret
 
 # 卫伦生成样板内容
 def wl_slm_ori(date, testname, sampno, tenantname):
-    slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "PlateNo": sampno, "CutOff": "0.123",
-        "SampleResults": [
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "A01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "B01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
-            {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "C01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
-            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "D01", "Info": None, "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "阳性"},
-            {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "E01", "Info": None, "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "阳性"},
-            {"BatchInfoName": "QC", "SpecimenBillNo": None, "PositionNo": "F01", "Info": None, "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "阳性"}
-        ]}
+    if '卫光' in tenantname:
+        slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y年%m月%d日 %H:%M:%S", time.localtime()), "PlateNo": sampno,
+            "SampleResults": [
+                {"BatchInfoName": "NC", "SpecimenBillNo": "NC", "PositionNo": "A01", "Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
+                {"BatchInfoName": "NC", "SpecimenBillNo": "NC", "PositionNo": "B01", "Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
+                {"BatchInfoName": "NC", "SpecimenBillNo": "NC", "PositionNo": "C01", "Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
+                {"BatchInfoName": "PC", "SpecimenBillNo": "NC", "PositionNo": "D01", "Info": "3.319", "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "+"},
+                {"BatchInfoName": "PC", "SpecimenBillNo": "NC", "PositionNo": "E01", "Info": "3.361", "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "+"},
+                {"BatchInfoName": "QC", "SpecimenBillNo": "NC", "PositionNo": "F01", "Info": "0.419", "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "+"}
+            ]}
+    else:
+        slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), "PlateNo": sampno, "CutOff": "0.123",
+            "SampleResults": [
+                {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "A01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+                {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "B01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+                {"BatchInfoName": "NC", "SpecimenBillNo": None, "PositionNo": "C01", "Info": None, "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "阴性"},
+                {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "D01", "Info": None, "OriginResult": "3.319", "AnalysisInfo": "26.984", "Result": "阳性"},
+                {"BatchInfoName": "PC", "SpecimenBillNo": None, "PositionNo": "E01", "Info": None, "OriginResult": "3.361", "AnalysisInfo": "27.325", "Result": "阳性"},
+                {"BatchInfoName": "QC", "SpecimenBillNo": None, "PositionNo": "F01", "Info": None, "OriginResult": "0.419", "AnalysisInfo": "3.407", "Result": "阳性"}]}
     for i in range(0, len(date)):
         hbsagy = [{"OriginResult": "0.001", "AnalysisInfo": "0.010"}, {"OriginResult": "0.002", "AnalysisInfo": "0.019"}, {"OriginResult": "0.003", "AnalysisInfo": "0.029"}]
         hbsagf = {"OriginResult": "0.306", "AnalysisInfo": "2.914"}
@@ -215,15 +225,17 @@ def wl_slm_ori(date, testname, sampno, tenantname):
             ori.update({'Result': '阳性'})
 
         if 'Result' in ori:
-            ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
-            ii.update(ori)
-            slm["SampleResults"].append(ii)
-        if '卫光' in tenantname:
-            for r in range(0, len(slm["SampleResults"])):
-                if slm["SampleResults"][r]['Result'] == '阳性':
-                    slm["SampleResults"][r].update({'Result': '+'})
+            if '卫光' in tenantname:
+                ii = {"BatchInfoName": "SMP1", "SpecimenBillNo": date[i]['BillNo'], "PositionNo": date[i]['PositionNo'], "Info": ori["OriginResult"]}
+                ii.update(ori)
+                if ii['Result'] == '阳性':
+                    ii.update({'Result': '+'})
                 else:
-                    slm["SampleResults"][r].update({'Result': '-'})
+                    ii.update({'Result': '-'})
+            else:
+                ii = {"BatchInfoName": date[i]['BillNo'], "SpecimenBillNo": None, "PositionNo": date[i]['PositionNo'], "Info": None}
+                ii.update(ori)
+        slm["SampleResults"].append(ii)
     slm = json.dumps(slm)
     # print('整版的内容', slm)
     return slm
