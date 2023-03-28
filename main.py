@@ -132,11 +132,11 @@ class QmyWidget(QWidget):
         self.ui.tableWidget.setColumnHidden(4, True)
         self.ui.tableWidget.setHorizontalHeaderLabels(['排序号', '流水号', 'ALT', 'TP'])
         self.ui.tableWidget.setColumnWidth(0, 50)
-        self.ui.tableWidget.setColumnWidth(1, 145)
-        self.ui.tableWidget.setColumnWidth(2, 50)
-        self.ui.tableWidget.setColumnWidth(3, 50)
-        self.ui.tableWidget.setItem(0, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.1f')))
-        self.ui.tableWidget.setItem(0, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.2f')))
+        self.ui.tableWidget.setColumnWidth(1, 150)
+        self.ui.tableWidget.setColumnWidth(2, 75)
+        self.ui.tableWidget.setColumnWidth(3, 75)
+        self.ui.tableWidget.setItem(0, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.6f')))
+        self.ui.tableWidget.setItem(0, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.6f')))
 
     def weilun(self):  # 初始化卫伦生化解析框架
         self.ui.tableWidget.clear()
@@ -145,11 +145,11 @@ class QmyWidget(QWidget):
         self.ui.tableWidget.setColumnHidden(4, True)
         self.ui.tableWidget.setHorizontalHeaderLabels(['上机号', '流水号', 'ALT', 'TP'])
         self.ui.tableWidget.setColumnWidth(0, 50)
-        self.ui.tableWidget.setColumnWidth(1, 145)
-        self.ui.tableWidget.setColumnWidth(2, 50)
-        self.ui.tableWidget.setColumnWidth(3, 50)
-        self.ui.tableWidget.setItem(0, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.1f')))
-        self.ui.tableWidget.setItem(0, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.2f')))
+        self.ui.tableWidget.setColumnWidth(1, 150)
+        self.ui.tableWidget.setColumnWidth(2, 75)
+        self.ui.tableWidget.setColumnWidth(3, 75)
+        self.ui.tableWidget.setItem(0, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.6f')))
+        self.ui.tableWidget.setItem(0, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.6f')))
 
     def buildhbtable(self):  # 初始化HB解析面板
         self.ui.tableWidget_2.clear()
@@ -158,14 +158,14 @@ class QmyWidget(QWidget):
         self.ui.tableWidget_2.setColumnHidden(2, True)
         self.ui.tableWidget_2.setHorizontalHeaderLabels(['流水号', 'HB'])
         self.ui.tableWidget_2.setColumnWidth(0, 150)
-        self.ui.tableWidget_2.setColumnWidth(1, 50)
+        self.ui.tableWidget_2.setColumnWidth(1, 80)
         self.ui.tableWidget_2.setItem(0, 1, QtWidgets.QTableWidgetItem(str(random.randint(110, 200))))
 
     def newrow(self):  # 生化通用行创建
         row_count = self.ui.tableWidget.rowCount()  # 返回当前行数
         self.ui.tableWidget.insertRow(row_count)  # 尾部插入一行
-        self.ui.tableWidget.setItem(row_count, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.1f')))
-        self.ui.tableWidget.setItem(row_count, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.2f')))
+        self.ui.tableWidget.setItem(row_count, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.6f')))
+        self.ui.tableWidget.setItem(row_count, 3, QtWidgets.QTableWidgetItem(format(random.uniform(45, 80), '.6f')))
 
     def joinshdata(self):  # 创建生化数据
         # self.ui.tableWidget.clear()
@@ -181,8 +181,8 @@ class QmyWidget(QWidget):
                 # print(date[i])
                 self.ui.tableWidget.setItem(i, 0, QtWidgets.QTableWidgetItem(str(date[i][1])))
                 self.ui.tableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(str(date[i][0].split('-', 2)[-1])))
-                self.ui.tableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.1f')))
-                self.ui.tableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(format(random.uniform(50, 80), '.2f')))
+                self.ui.tableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(format(random.uniform(10, 49), '.6f')))
+                self.ui.tableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(format(random.uniform(50, 80), '.6f')))
                 self.ui.tableWidget.setItem(i, 4, QtWidgets.QTableWidgetItem(str(date[i][0])))
                 if i + 1 < len(date):
                     self.newrow()
@@ -336,7 +336,7 @@ class QmyWidget(QWidget):
         else:
             self.ui.tableWidget_3.setHorizontalHeaderLabels(['Code', '孔位', '流水号', 'HBsAg', 'HCVAb', 'HIVAb', '梅毒'])
         self.ui.tableWidget_3.setColumnWidth(1, 80)
-        self.ui.tableWidget_3.setColumnWidth(2, 145)
+        self.ui.tableWidget_3.setColumnWidth(2, 150)
         self.ui.tableWidget_3.setColumnWidth(3, 50)
         self.ui.tableWidget_3.setColumnWidth(4, 50)
         self.ui.tableWidget_3.setColumnWidth(5, 50)
