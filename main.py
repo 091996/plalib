@@ -239,7 +239,7 @@ class QmyWidget(QWidget):
                     carrystatus = 1
                 else:
                     carrystatus = 0
-                print(date[i])
+                # print(date[i])
                 sql = sampleresults(tenant, self.tenancyName, date[i], base[0], carrystatus)
                 # print(sql)
                 status = 0
@@ -251,7 +251,7 @@ class QmyWidget(QWidget):
                             if carrystatus == 0:
                                 oriidsql = seltopori(tenant, self.tenancyName)
                                 oriid = self.sqlsel(oriidsql)
-                                print(oriid[0][0])
+                                # print(oriid[0][0])
                                 orires = OriginalResult(tenant, self.tenancyName, self.api, int(oriid[0][0]))
                                 self.ui.textBrowser.append('{} {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), orires))
                             self.ui.textBrowser.append(

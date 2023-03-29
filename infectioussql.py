@@ -89,7 +89,6 @@ def wl_testbatch(host, apihost, tenant, token):
             if str(test[i]['id']) in batch[ii]['baseMaterial']['testItemId']:
                 if batch[ii]['baseMaterial']['materialType'] == 0:
                     try:
-                        print(batch[ii]['inventory']['qty'])
                         if batch[ii]['inventory']['qty'] != 0:
                             # print('试剂', batch[ii])
                             if test[i]['type'] == 3:
