@@ -137,7 +137,7 @@ def wl_savebody(test):
 # 卫伦保存样板
 def wl_save(tenantname, host, apihost, tenant, token, infdate):
     alltest = wl_testbatch(host, apihost, tenant, token)
-    if '卫光' in tenantname:
+    if '卫光' in tenantname or '同路' in tenantname:
         url = '{}/api/services/app/SpecimenLayoutManagementBetail/Save'.format(apihost)
     else:
         url = '{}/api/services/app/SpecimenLayoutManagementBetail/SaveNew'.format(apihost)
@@ -158,6 +158,8 @@ def wl_save(tenantname, host, apihost, tenant, token, infdate):
         time.sleep(1)
         if '卫光' in tenantname:
             sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'URANUS-AE115', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'" + billinf['samplePlateNumber'] + "', 0, " + tenant + ", getdate(), null, getdate(), null);"
+        elif '同路' in tenantname:
+            sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'URANUS-AE145', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'" + billinf['samplePlateNumber'] + "', 0, " + tenant + ", getdate(), null, getdate(), null);"
         else:
             sql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'ADDCARE', N'" + DataSource.encode('utf-8').decode('unicode_escape') + "', N'"+billinf['samplePlateNumber']+"', 0, "+tenant+", getdate(), null, getdate(), null);"
         # print([alltest[i][0], sql])
@@ -166,7 +168,7 @@ def wl_save(tenantname, host, apihost, tenant, token, infdate):
 
 # 卫伦生成样板内容
 def wl_slm_ori(date, testname, sampno, tenantname):
-    if '卫光' in tenantname:
+    if '卫光' in tenantname or '同路' in tenantname:
         slm = {"TestName": testname, "Operator": "system", "TestTime": time.strftime("%Y年%m月%d日 %H:%M:%S", time.localtime()), "PlateNo": sampno,
             "SampleResults": [
                 {"BatchInfoName": "NC", "SpecimenBillNo": "NC", "PositionNo": "A01", "Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.024", "Result": "-"},
@@ -224,7 +226,7 @@ def wl_slm_ori(date, testname, sampno, tenantname):
             ori.update({'Result': '阳性'})
 
         if 'Result' in ori:
-            if '卫光' in tenantname:
+            if '卫光' in tenantname or '同路' in tenantname:
                 ii = {"BatchInfoName": "SMP1", "SpecimenBillNo": date[i]['BillNo'], "PositionNo": date[i]['PositionNo'], "Info": ori["OriginResult"]}
                 ii.update(ori)
                 if ii['Result'] == '阳性':
@@ -238,6 +240,33 @@ def wl_slm_ori(date, testname, sampno, tenantname):
     slm = json.dumps(slm)
     # print('整版的内容', slm)
     return slm
+
+
+# 因为同路的没有自动解析，所以需要调用后端接口进行解析
+def tl_OriginalResultid(tenant):
+    sql = "select top 1 Id from OriginalResult where TenantId = " + tenant + " and EquipmentName = 'URANUS-AE145' order by CreationTime desc"
+    return sql
+
+
+def tl_TestAE(apihost, tenant, original, textBrowser):
+    url = '{}/api/services/app/OriginalResult/TestAE'.format(apihost)
+    headers = {
+        'Host': apihost.split('//', -1)[1],
+        'Connection': 'keep-alive',
+        'accept': '*/*',
+        'Authorization': 'null',
+        'Cookie': 'jenkins-timestamper-offset=-28800000; JSESSIONID.a498e839=node0fj1l6faupmma14pc5ljau9k280.node0; screenResolution=1600x900; .AspNetCore.Antiforgery.nZNI7wbmT0k=CfDJ8BrRSekVSMFAsv2lVQp6vT7XIYvHd2qmVaI70NFQgC8en-9Saq7Nn39qVzjpklbQPY3mZV2j-iceQ_OSh_AlL6BtSzfJLBjPcJfPpH5tyH46lzS6uLTWMNOSD3ZFRm5Hkb6J4pkGZMZn7kv6ZFmEfRs; XSRF-TOKEN=CfDJ8BrRSekVSMFAsv2lVQp6vT6u0h1yjh_XIphaPZPJnfVZihSsPtUqf59tPZcmKk0a8WobrvjfSa6Hi6l6gOIib9k7QGfc5jM8LXEaKs6jkv_oaf2tg3AJECWWdiLdv1I761yC1XtbRyNsGgLUB7zKw9k; tenantId={}; vue_admin_template_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA1IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjU4MzgzMTM1NUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMiIsInN1YiI6IjEwMDA1IiwianRpIjoiNGMxMDU4YjktNjgyOC00OTg0LThhNTgtM2E1MWU4OGRmMGY0IiwiaWF0IjoxNjgwMjM1MzkwLCJuYmYiOjE2ODAyMzUzOTAsImV4cCI6MTY4MDMyMTc5MCwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.VeI_YqVzMb1zitxfgs0VEJYKlgF7Jjrc870d6jqaJfU; UserId=10005'.format(tenant),
+        'Content-Type': 'application/json-patch+json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
+        'X-XSRF-TOKEN': 'CfDJ8BrRSekVSMFAsv2lVQp6vT6u0h1yjh_XIphaPZPJnfVZihSsPtUqf59tPZcmKk0a8WobrvjfSa6Hi6l6gOIib9k7QGfc5jM8LXEaKs6jkv_oaf2tg3AJECWWdiLdv1I761yC1XtbRyNsGgLUB7zKw9k',
+        'Referer': '{}/swagger/index.html'.format(apihost), 'Origin': apihost, 'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9'}
+    r = requests.post(url, headers=headers, json={"id": original})
+    if r.json()['success']:
+        log = '解析成功'
+    else:
+        log = r.json()['error']['details']
+    textBrowser.append('{} {}'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), log))
 
 
 # 丹霞查找需要的样板信息

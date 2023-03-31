@@ -11,7 +11,7 @@ from GetAllTenant import tenantlist
 from IPConfig import getapihost
 from SqlServer import sqlselect, sqlup
 from hbanalysis import hblist, hbno, hbins
-from infectioussql import findbill, wl_save, dx_savenew
+from infectioussql import findbill, wl_save, dx_savenew, tl_OriginalResultid, tl_TestAE
 from shenghua import findlist, sampleresults, findbillno, baseinfo, seltopori, OriginalResult
 
 from untitled import Ui_Form
@@ -405,6 +405,11 @@ class QmyWidget(QWidget):
                     try:
                         if re[ii][1] is None:
                             self.sqlupdate(re[ii][2])
+                            # 同路需要手动调用酶板解析
+                            if '同路' in self.tenancyName:
+                                orisql = tl_OriginalResultid(self.tenantid)
+                                oriid = self.sqlsel(orisql)[0][0]
+                                tl_TestAE(self.api, self.host, oriid, self.ui.textBrowser)
                             self.ui.textBrowser.append('{} {}项目解析完成'.format(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), re[ii][0]))
                             self.infectious()
                     except:
