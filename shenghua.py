@@ -1,3 +1,4 @@
+import json
 import time
 
 import requests
@@ -85,7 +86,7 @@ def sampleresults(tenant, tenancyName, date, base, status):
         else:
             altResults = '异常'
 
-        if '卫伦' in tenancyName:
+        if '卫伦' in tenancyName or '同路' in tenancyName:
             altsql = "INSERT INTO dbo.SampleResults (SpecimenBillNo, OriginalResults, Results, Proportion, TestItemId, OriginalResultId, BillStatus, SamplePlateNumber, ManualNumber, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId, AuditTime, PlateNo, TestTime, IsTempResult) VALUES ( '"+date['Code']+"', '"+date['ALT']+"', '"+altResults+"', '"+date['ALT']+"', (select top 1 Id from TestItem where TenantId = "+tenant+" and Name like '%ALT%' and Type = 1), null, 0, null, null, "+tenant+", getdate(), null, getdate(), null, null, "+date['PlateNo']+", null, 0);"
             tpsql = "INSERT INTO dbo.SampleResults (SpecimenBillNo, OriginalResults, Results, Proportion, TestItemId, OriginalResultId, BillStatus, SamplePlateNumber, ManualNumber, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId, AuditTime, PlateNo, TestTime, IsTempResult) VALUES ( '"+date['Code']+"', '"+date['TP']+"', '"+tpResults+"', '"+date['TP']+"', (select top 1 Id from TestItem where TenantId = "+tenant+" and Name like '%TP%' and Type = 2), null, 0, null, null, "+tenant+", getdate(), null, getdate(), null, null, "+date['PlateNo']+", null, 0);"
         elif '卫光' in tenancyName:
@@ -98,7 +99,7 @@ def sampleresults(tenant, tenancyName, date, base, status):
     elif status == 0:
         if '卫光' in tenancyName:
             altsql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'MR-BS820M', N'MSH|^~\&|||||" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "||ORU^R01|68|P|2.3.1||||0||ASCII|||PID|" +date["PlateNo"]+ "|||||||O|||||||||||||||||||||||OBR|" +date["PlateNo"]+ "|" +date["BillNo"]+ "|65|^|N|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "||9^1^1^N0009||||" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|???|||||||||||||||||||||||||||||||||OBX|1|NM|ALT|????????????|" +date["ALT"]+ "|U/L|-|N|||F||29.611302|"+ time.strftime("%Y%m%d%H%M%S", time.localtime()) +"|||0|||M1|2008:AC9E#2008:8000|OBX|2|NM|TP|?????(????巨)|" +date["TP"]+ "|g/L|-|N|||F||62.869764|"+ time.strftime("%Y%m%d%H%M%S", time.localtime()) +"|||0|||M1|2001:9A0E#2001:C04E|', N'', 0, " + tenant + ", getdate(), null, getdate(), null);"
-        elif '丹霞' in tenancyName:
+        elif '丹霞' in tenancyName or '同路' in tenancyName:
             altsql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'MR-BS360s', N'MSH|^~\&|||||" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "||ORU^R01|68|P|2.3.1||||0||ASCII|||PID|" +date["PlateNo"]+ "|||||||O|||||||||||||||||||||||OBR|" +date["PlateNo"]+ "|" +date["BillNo"]+ "|" +date["PlateNo"]+ "|^|N|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "||9^1^1^N0009||||" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|???|||||||||||||||||||||||||||||||||OBX|1|NM|ALT|????????????|" +date["ALT"]+ "|U/L|-|N|||F||29.611302|"+ time.strftime("%Y%m%d%H%M%S", time.localtime()) +"|||0|||M1|2008:AC9E#2008:8000|OBX|2|NM|TP|?????(????巨)|" +date["TP"]+ "|g/L|-|N|||F||62.869764|"+ time.strftime("%Y%m%d%H%M%S", time.localtime()) +"|||0|||M1|2001:9A0E#2001:C04E|', N'', 0, " + tenant + ", getdate(), null, getdate(), null);"
         elif '卫伦' in tenancyName:
             altsql = "INSERT INTO dbo.OriginalResult (EquipmentName, DataSource, DataFlag, Status, TenantId, CreationTime, CreatorUserId, LastModificationTime, LastModifierUserId) VALUES (N'KH-ZY400', N'<STX>1H|\^&|ZY1200^1|1|A|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "<ETX>12<STX>2P|1<ETX>3F<STX>3O|1|1|ALT^1||B|" +date["Code"]+ "|||||" +date["PlateNo"]+ "|P|R|S|2<ETX>DE<STX>4R|1|ALT|" +date["ALT"]+ "|0.3|0.5|ml|H|" +time.strftime("%Y%m%d%H%M%S", time.localtime())+ "|2|<ETX>16<STX>5L|1<ETX>3E', N'', 0, "+ tenant +", getdate(), null, getdate(), null);"
@@ -112,7 +113,7 @@ def findbillno(tenant, billno):
 def seltopori(tenant, tenancyname):
     if '卫光' in tenancyname:
         sql = "select top 1 Id from OriginalResult where TenantId = " +tenant+ " and EquipmentName = 'MR-BS820M' order by CreationTime desc"
-    elif '丹霞' in tenancyname:
+    elif '丹霞' in tenancyname or '同路' in tenancyname:
         sql = "select top 1 Id from OriginalResult where TenantId = " +tenant+ " and EquipmentName = 'MR-BS360s' order by CreationTime desc"
     elif '卫伦' in tenancyname:
         sql = "select top 1 Id from OriginalResult where TenantId = " + tenant + " and EquipmentName = 'KH-ZY400' order by CreationTime desc"
@@ -166,7 +167,23 @@ def OriginalResult(tenant, tenancyname, apihost, original):
             'Accept-Encoding': 'gzip, deflate',
             'Accept-Language': 'zh-CN,zh;q=0.9'
         }
-    r = requests.post(url, headers=headers)
+    elif '同路' in tenancyname:
+        url = '{}/api/services/app/OriginalResult/TestBS360s'.format(apihost)
+        headers = {
+            'Host': apihost.split('//', -1)[1],
+            'Connection': 'keep-alive',
+            'accept': '*/*',
+            'Authorization': 'null',
+            'Cookie': 'jenkins-timestamper-offset=-28800000; JSESSIONID.a498e839=node0fj1l6faupmma14pc5ljau9k280.node0; screenResolution=1600x900; .AspNetCore.Antiforgery.nZNI7wbmT0k=CfDJ8BrRSekVSMFAsv2lVQp6vT7XIYvHd2qmVaI70NFQgC8en-9Saq7Nn39qVzjpklbQPY3mZV2j-iceQ_OSh_AlL6BtSzfJLBjPcJfPpH5tyH46lzS6uLTWMNOSD3ZFRm5Hkb6J4pkGZMZn7kv6ZFmEfRs; XSRF-TOKEN=CfDJ8BrRSekVSMFAsv2lVQp6vT6u0h1yjh_XIphaPZPJnfVZihSsPtUqf59tPZcmKk0a8WobrvjfSa6Hi6l6gOIib9k7QGfc5jM8LXEaKs6jkv_oaf2tg3AJECWWdiLdv1I761yC1XtbRyNsGgLUB7zKw9k; tenantId={}; vue_admin_template_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjEwMDA1IiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6Im1rcG1hZG1pbiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL2VtYWlsYWRkcmVzcyI6IjU4MzgzMTM1NUBxcS5jb20iLCJBc3BOZXQuSWRlbnRpdHkuU2VjdXJpdHlTdGFtcCI6ImY5Zjg0YmQ1LTViNTktZTg5Yy01Njg0LTM5ZmJkN2M1ZjZlMSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IkFkbWluIiwiaHR0cDovL3d3dy5hc3BuZXRib2lsZXJwbGF0ZS5jb20vaWRlbnRpdHkvY2xhaW1zL3RlbmFudElkIjoiMiIsInN1YiI6IjEwMDA1IiwianRpIjoiNGMxMDU4YjktNjgyOC00OTg0LThhNTgtM2E1MWU4OGRmMGY0IiwiaWF0IjoxNjgwMjM1MzkwLCJuYmYiOjE2ODAyMzUzOTAsImV4cCI6MTY4MDMyMTc5MCwiaXNzIjoiTWtDaGVja1N5c3RlbSIsImF1ZCI6Ik1rQ2hlY2tTeXN0ZW0ifQ.VeI_YqVzMb1zitxfgs0VEJYKlgF7Jjrc870d6jqaJfU; UserId=10005'.format(tenant),
+            'Content-Type': 'application/json-patch+json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Safari/537.36',
+            'X-XSRF-TOKEN': 'CfDJ8BrRSekVSMFAsv2lVQp6vT6u0h1yjh_XIphaPZPJnfVZihSsPtUqf59tPZcmKk0a8WobrvjfSa6Hi6l6gOIib9k7QGfc5jM8LXEaKs6jkv_oaf2tg3AJECWWdiLdv1I761yC1XtbRyNsGgLUB7zKw9k',
+            'Referer': '{}/swagger/index.html'.format(apihost),
+            'Origin': apihost,
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.9'
+        }
+    r = requests.post(url, headers=headers, json={"id": original})
     if r.json()['success']:
         log = '解析成功'
     else:
