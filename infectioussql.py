@@ -414,7 +414,7 @@ def detaillists(platenumber, testname, typeid, date, detail):
     hbsagy = [{"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.010", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.019", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.029", "Result": "-"}]
     hbsagf = {"Info": "0.306", "OriginResult": "0.306", "AnalysisInfo": "2.914", "Result": "+"}
 
-    hcvaby = [{"Info": "0.000", "OriginResult": "0.000", "AnalysisInfo": "0.000", "Result": "-"}, {"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.008", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.016", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.025", "Result": "-"}, {"OriginResult": "0.004", "AnalysisInfo": "0.033", "Result": "-"}]
+    hcvaby = [{"Info": "0.000", "OriginResult": "0.000", "AnalysisInfo": "0.000", "Result": "-"}, {"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.008", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.016", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.025", "Result": "-"}, {"Info": "0.004", "OriginResult": "0.004", "AnalysisInfo": "0.033", "Result": "-"}]
     hcvabf = {"Info": "0.572", "OriginResult": "0.572", "AnalysisInfo": "4.689", "Result": "+"}
 
     hivaby = [{"Info": "0.001", "OriginResult": "0.001", "AnalysisInfo": "0.008", "Result": "-"}, {"Info": "0.002", "OriginResult": "0.002", "AnalysisInfo": "0.019", "Result": "-"}, {"Info": "0.003", "OriginResult": "0.003", "AnalysisInfo": "0.029", "Result": "-"}]
