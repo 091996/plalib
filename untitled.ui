@@ -22,6 +22,10 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>favicon.ico</normaloff>favicon.ico</iconset>
+  </property>
   <widget class="QLineEdit" name="lineEdit">
    <property name="geometry">
     <rect>
